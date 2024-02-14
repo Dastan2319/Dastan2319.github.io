@@ -29,75 +29,40 @@ export const useMyRecordsStore = defineStore("myRecordsStore", () => {
     return records.value.find((item: any) => { return item?.id == id })
   })
 
-  async function getApiRecords(query?:object) {
-    try {
-      await $fetch(CONFIG.RECORDS, {
-        method: "GET",
-        query:query,
-        headers: {
-          Authorization: `Bearer ${auth.authToken}`
-        }
-      }).then((data: any) => {
-        records.value = data.items;
-        meta.value = data._meta;
-      })
-    } catch (e:any) {
-      console.error(e)
-      if (e.response.status == 401) {
-        auth.exit();
+  async function getApiRecords(query?: object) {
+    useFetchData(CONFIG.RECORDS, "GET", query).then((data: any) => {
+      records.value = data.items;
+      meta.value = data._meta;
+    })
+  }
+
+  async function postCreateRecord(body: object, id?: number) {
+    let api = CONFIG.RECORDS;
+    if (id) api + '/' + id;
+    useFetchData(CONFIG.RECORDS, id ? "PUT" : "POST", {}, body).then((data: any) => {
+      if (!id) {
+        records.value.push(data);
+      } else {
+        let index = records.value.findIndex((el: any) => {
+          if (el.id == id) return el;
+        })
+        records.value[index] = data;
       }
-    }
+    })
+
   }
 
-  async function postCreateRecord(body:object , id?:number) {
-    try {
-      let api = CONFIG.RECORDS ;
-      if (id) api + '/' + id
-      await $fetch(api, {
-        method: id ? "PUT":"POST",
-        body:body,
-        headers: {
-          Authorization: `Bearer ${auth.authToken}`
-        }
-      }).then((data: any) => {
-        if(!id){
-          records.value.push(data);
-        }else{
-          let index = records.value.findIndex((el:any)=>{
-            if(el.id == id) return el;
-          })
-          records.value[index] = data;
-        }
-        // meta.value = data._meta;
+
+
+  async function delRecord(id: number) {
+    useFetchData(CONFIG.RECORDS + '/' + id, "DELETE").then((data: any) => {
+      let filtered = records.value.filter((el: any) => {
+        return el.id != data.id
       })
-    } catch (e:any) {
-      console.error(e)     
-      if (e.response.status == 401) {
-        auth.exit();
-      } 
-    }
+      records.value = filtered;
+    })
+
   }
 
-  async function delRecord(id:number) {
-    try {
-      await $fetch(CONFIG.RECORDS + '/' + id, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${auth.authToken}`
-        }
-      }).then((data: any) => {
-          let filtered = records.value.filter((el:any)=>{
-            return el.id != data.id
-          })
-          records.value = filtered;
-      })
-    } catch (e:any) {
-      console.error(e)
-      if (e.response.status == 401) {
-        auth.exit();
-      }      
-    }
-  }
-
-  return { records, meta, getMeta, getRecords, getById, getApiRecords , postCreateRecord , delRecord }
+  return { records, meta, getMeta, getRecords, getById, getApiRecords, postCreateRecord, delRecord }
 })

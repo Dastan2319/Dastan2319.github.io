@@ -19,6 +19,17 @@
         New Item
       </v-btn>
     </div>
+    <div class="filters">
+      <div class="filterItem" v-for="(item, index) in filters" :key="index + 'filters'">
+        <v-text-field
+          v-model="item.data"
+          :label="item.title"
+          :type="item.type ? item.type : 'text'"
+        ></v-text-field>
+      </div>
+      <v-btn color="success" class="mr-2" @click="submitFilters()">Submit</v-btn>
+      <v-btn color="error" @click="clearFilters()">Clear</v-btn>
+    </div>
     <v-data-table
       :headers="headers"
       :items="store.getRecords"
@@ -93,6 +104,45 @@ definePageMeta({
   layout: "custom",
 });
 const rules = [(v: any) => !!v || "is required"];
+const initialFilter = [
+  {
+    title: "Фамилия",
+    name: "f",
+    data: "",
+  },
+  {
+    title: "Имя",
+    name: "i",
+    data: "",
+  },
+  {
+    title: "Отчество",
+    name: "o",
+    data: "",
+  },
+  {
+    title: "Город",
+    name: "city",
+    data: "",
+  },
+  {
+    title: "Адрес",
+    name: "address",
+    data: "",
+  },
+  {
+    title: "Дата рождения",
+    name: "birthday",
+    data: "",
+    type: "date",
+  },
+  {
+    title: "Номер телефона",
+    name: "phone",
+    data: "",
+  },
+];
+const filters = ref([...initialFilter]);
 const state = ref({
   id: null,
   f: "",
@@ -104,6 +154,7 @@ const state = ref({
   phone: "",
 });
 const newItemDialog = ref(false);
+const query = ref({} as object[]);
 const form = ref();
 const headers = ref([
   { title: "Фамилия", key: "f", align: "end" },
@@ -117,11 +168,11 @@ const headers = ref([
 ] as Array<object>);
 
 const loadItems = ({ page, itemsPerPage, sortBy }: any) => {
-  let query = {} as object[];
+  let querySort = {} as object[];
   if (sortBy.length) {
-    query["sort"] = sortBy[0].key;
+    querySort["sort"] = sortBy[0].key;
   }
-  store.getApiRecords(query);
+  store.getApiRecords(querySort);
 };
 const submitBtns = async () => {
   form.value?.validate().then(({ valid: isValid }: any) => {
@@ -150,6 +201,29 @@ const delRecords = (item: any) => {
   store.delRecord(item.id);
 };
 
+const submitFilters = () => {
+  // const filterSort = query.value["sort"]?query.value["sort"]:"";
+  query.value = {} as object[];
+  filters.value.forEach((el: any) => {
+    if (el.data) {
+      query.value[el.name] = el.data;
+    }
+  });
+  // if(filterSort){
+  //   query.value["sort"] = filterSort;
+  // }
+  store.getApiRecords(query.value);
+};
+
+const clearFilters = () => {
+  // filters.value = initialFilter;
+  filters.value.forEach((el: any) => {
+    el.data = "";
+  });
+  query.value = {} as object[];
+  store.getApiRecords();
+};
+
 watch(newItemDialog, (newData: any) => {
   if (!newData) {
     state.value = {
@@ -167,6 +241,15 @@ watch(newItemDialog, (newData: any) => {
 </script>
 
 <style lang="scss" scoped>
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  .filterItem {
+    margin-right: 8px;
+    width: 200px;
+  }
+}
 .crudTop {
   display: flex;
   align-items: center;
